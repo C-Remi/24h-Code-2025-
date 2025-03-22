@@ -1,3 +1,8 @@
 venv/
 __pycache__
+**/__pycache__/*
+
 other/
+src/__pycache__/*
+src/api/__pycache__/*
+src/utils/__pycache__/*
