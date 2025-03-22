@@ -46,6 +46,7 @@ class Robot:
         self.ws_info_wheels = WebSocketClient(self._uri_ws_info)
         self.ws_info_speed = WebSocketClient(self._uri_ws_info)
         self.ws_info_range = WebSocketClient(self._uri_ws_info)
+        self.status_info = dict()
 
 
         self.step_angle = step_angle
@@ -87,69 +88,33 @@ class Robot:
             await self.ws_info_range.connect()
             await self.ws_info_range.send_message(INFOS_RANGEFINDER)
 
-    @property
-    def x(self):
-        """Get the x-coordinate."""
-        return self._x
-
-    @x.setter
-    def x(self, value):
-        """Set the x-coordinate."""
-        if isinstance(value, (int, float)):
-            self._x = value
-        else:
-            raise ValueError("X must be a number.")
-
-    @property
-    def y(self):
-        """Get the y-coordinate."""
-        return self._y
-
-    @y.setter
-    def y(self, value):
-        """Set the y-coordinate."""
-        if isinstance(value, (int, float)):
-            self._y = value
-        else:
-            raise ValueError("Y must be a number.")
-
-    @property
-    def radial(self):
-        """Get the radial angle (0 to 360 degrees)."""
-        return self._radial
-
-    @radial.setter
-    def radial(self, value):
-        """Set the radial angle and keep it within 0-360 degrees."""
-        if isinstance(value, (int, float)):
-            self._radial = value % 360  # Ensure it's always within 0-360
-        else:
-            raise ValueError("Radial must be a number.")
+    async def update_status(self):
+        for ws in (
+            self.ws_info_pos,
+            self.ws_info_led,
+            self.ws_info_motor,
+            self.ws_info_wheels,
+            self.ws_info_speed,
+            self.ws_info_range,
+        ):
+            msg = await ws.receive_message()
+            try:
+                data = readInfos(msg)
+                self.status_info.update(data)
+            except Exception as e:
+                print("Error while decoding", msg)
 
     async def activate(self):
         test = True
-        
+
         while True:
             # Connect to information WS
             if self._ws_client_motors.is_closed():
                 await self._ws_client_motors.connect()
 
             await self.init_infos_ws()
-            
-            for ws in (
-                self.ws_info_pos,
-                self.ws_info_led,
-                self.ws_info_motor,
-                self.ws_info_wheels,
-                self.ws_info_speed,
-                self.ws_info_range,
-            ):
-                msg = await ws.receive_message()
-                try:
-                    status, data = readInfos(msg)
-                except Exception as e:
-                    print("Error while decoding", msg)
-                    
+            await self.update_status()
+
             if test:
                 test= False
                 turtle_move_forward(self._host, 10)
@@ -206,18 +171,17 @@ class Robot:
         """Rotates the robot step by step, scanning for open paths."""
         self.detected_paths = []  # Reset detected paths
 
-        while self.radial < self.max_angle:
+        while self.status_info.get("angle", 0.0) < self.max_angle:
             distance = self.sensor.get_distance()
-            print(f"Angle: {self.radial}° - Distance: {distance} cm")
+            print(f"Angle: {self.status_info.get('angle', 0.0)}° - Distance: {distance} cm")
 
             if distance > self.path_threshold:
-                self.detected_paths.append(self.radial)
-                print(f"Path detected at {self.radial}°!")
+                self.detected_paths.append(self.status_info.get("angle", 0.0))
+                print(f"Path detected at {self.status_info.get('angle', 0.0)}°!")
 
-            self.radial += self.step_angle
+            self.rotate(self.step_angle) # TODO: implement me
             time.sleep(0.1)  # Simulate sensor delay
 
-        self.radial = 0  # Reset rotation
         print("Scan complete. Paths found at angles:", self.detected_paths)
 
     def __repr__(self):
