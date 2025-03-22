@@ -127,32 +127,15 @@ class Robot:
             raise ValueError("Radial must be a number.")
 
     async def activate(self):
+        test = True
+        
         while True:
             # Connect to information WS
             if self._ws_client_motors.is_closed():
                 await self._ws_client_motors.connect()
 
-            if self._ws_client_info.is_closed():
-                await self._ws_client_info.connect()
-                print(b'2' + bytes([INFOS_POSITION | INFOS_LED | INFOS_MOTORS | INFOS_RANGEFINDER | INFOS_SPEED | INFOS_WHEELS]))
-                await self._ws_client_info.send_message(b'2' + bytes([INFOS_POSITION | INFOS_LED | INFOS_MOTORS | INFOS_RANGEFINDER | INFOS_SPEED | INFOS_WHEELS]))
-                
-
-            test = True
-            if test:
-                test= True
-                turtle_move_forward(self._host, 10)
-                turtle_rotate(self._host, 90)
-                #self.rotate_and_scan()
-
-            # Read INFO WS
-            msg = await self._ws_client_info.receive_message()
-            try:
-                readInfos(msg)
-            except:
-                pass
             await self.init_infos_ws()
-
+            
             for ws in (
                 self.ws_info_pos,
                 self.ws_info_led,
@@ -166,6 +149,12 @@ class Robot:
                     status, data = readInfos(msg)
                 except Exception as e:
                     print("Error while decoding", msg)
+                    
+            if test:
+                test= False
+                turtle_move_forward(self._host, 10)
+                #turtle_rotate(self._host, 90)
+                #self.rotate_and_scan()
 
     async def set_motor_speed(self, vl, vr):
         vl = max(-1, min(vl, 1))
