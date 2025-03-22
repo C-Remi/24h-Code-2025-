@@ -7,7 +7,7 @@ import time
 t0, t1 = 0, 0
 
 HOST = "192.168.84.6"
-K = 0.2
+K = 0.1
 
 uri_ws_info = f"ws://{HOST}/infos.ws"
 uri_ws_motors = f"ws://{HOST}/motors.ws"
@@ -42,7 +42,7 @@ async def main():
         print(infos)
 
         if previous_angle == None:
-            compensation_factor = None
+            compensation_factor = 0
         else:
             compensation_factor = (infos['a'] - previous_angle) * K
         print(compensation_factor)
@@ -53,7 +53,7 @@ async def main():
 
         t1 = time.time()
 
-        print(f"freq = {1/(t1-t0)}Hz")
+        #print(f"freq = {1/(t1-t0)}Hz")
 
         t0 = t1
 

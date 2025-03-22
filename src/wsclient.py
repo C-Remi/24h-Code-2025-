@@ -22,7 +22,7 @@ class WebSocketClient:
         """Send a message to the WebSocket server."""
         if self.websocket:
             await self.websocket.send(message)
-            print(f"Sent: {message}")
+            #print(f"Sent: {message}")
 
     async def receive_message(self):
         """Receive a message from the WebSocket server."""
@@ -50,7 +50,6 @@ class WebSocketClient:
             if message is None:
                 break  # Exit loop if connection is closed
     def is_closed(self):
-        """Check if the WebSocket connection is closed."""        
+        """Check if the WebSocket connection is closed."""
         return self.websocket is None or self.closed
 
-    
