@@ -1,4 +1,4 @@
-from wsclient import WebSocketClient
+from utils.wsclient import WebSocketClient
 import asyncio
 import struct
 

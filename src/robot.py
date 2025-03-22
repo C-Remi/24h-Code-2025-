@@ -1,6 +1,6 @@
 
 from utils.wsclient import WebSocketClient
-from api.infos import readInfos, readInfosPos
+from api.infos import readInfos, INFOS_POSITION, INFOS_LED, INFOS_MOTORS, INFOS_RANGEFINDER, INFOS_SPEED, INFOS_WHEELS
 from api.request import reset_position, set_led_color
 from utils.tof import TimeOfFlightSensor
 from robot_gps import RobotGps
@@ -94,19 +94,16 @@ class Robot:
 
             if self._ws_client_info.is_closed():
                 await self._ws_client_info.connect()
-                await self._ws_client_info.send_message(b'\x03')
+                print(b'2' + bytes([INFOS_POSITION | INFOS_LED | INFOS_MOTORS | INFOS_RANGEFINDER | INFOS_SPEED | INFOS_WHEELS]))
+                await self._ws_client_info.send_message(b'2' + bytes([INFOS_POSITION | INFOS_LED | INFOS_MOTORS | INFOS_RANGEFINDER | INFOS_SPEED | INFOS_WHEELS]))
+                
 
             # Read INFO WS
             msg = await self._ws_client_info.receive_message()
             try:
-                (x,y,r) = readInfosPos(msg)
-                await self.move_straight(0,r)
+                readInfos(msg)
             except:
                 pass
-            #print(x,y,r)
-            #self.gps.add_new_position(x,y,r)
-
-            #readInfos(msg)
 
     async def set_motor_speed(self, vl, vr):
         vl = max(-1, min(vl, 1))

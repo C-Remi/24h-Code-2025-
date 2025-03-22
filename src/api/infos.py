@@ -1,4 +1,5 @@
 import math
+import struct
 
 INFOS_POSITION = 0x01
 INFOS_LED = 0x02
@@ -7,9 +8,9 @@ INFOS_WHEELS = 0x08
 INFOS_SPEED = 0x10
 INFOS_RANGEFINDER = 0x20
 
-def readInfosPos(data):
+def readInfos(data):
     try:
-        mask = struct.unpack(">B", data[:1])
+        (mask, *rest) = struct.unpack(">B", data[:1])
 
         if (mask & INFOS_POSITION):
             position_x, position_y, position_a = struct.unpack(">xfff", data)
@@ -18,99 +19,38 @@ def readInfosPos(data):
             finalY = round(position_y * 1000)
             rad = round(position_a * 180 / math.pi)
             print(f"posX: {finalX} mm, posY: {finalY} mm , posA: {rad} deg")
-            return((finalX, finalY, rad))
-    except:
-        print('err')
+            return (True,(finalX, finalY, rad))
 
-def readInfosLed(data):
-    try:
-        mask = struct.unpack(">B", data[:1])
-
-        if (mask & INFOS_LED):
-            led_r, led_g, led_b = struct.unpack(">Bcc", data)
+        elif (mask & INFOS_LED):            
+            led_r, led_g, led_b = struct.unpack(">xBBB", data)
 
             print(f"ledR: {led_r}, ledG: {led_g}, ledB: {led_b}")
-            return((led_r, led_g, led_b))
-        else:
-            raise ValueError
-    except:
-        print('err')
-        raise
-
-def readInfosMotors(data):
-    try:
-
-        mask = struct.unpack(">B", data[:1])
-
-        if (mask & INFOS_MOTORS):
+            return (True,(led_r, led_g, led_b))
+        elif (mask & INFOS_MOTORS):
             ml, mr = struct.unpack(">xff", data)
 
             print(f"Motor left: {ml}, motor right: {mr}")
-            return((ml, mr))
-        else:
-            raise ValueError
-    except:
-        print('err')
-        raise
-
-def readInfosWheels(data):
-    try:
-
-        mask = struct.unpack(">B", data[:1])
-        pos += 1
-
-        if (mask & INFOS_WHEELS):
-            wl, wr, tl, tr = struct.unpack(">xHHH", data)
-
-            pos += 4*2
+            return (True,(ml, mr))
+        elif (mask & INFOS_WHEELS):
+            wl, wr, tl, tr = struct.unpack(">xHHHH", data)
 
             print(f"Wheel left: {wl}, tl: {tr}, wheel right: {wr}, tr: {tr} ")
-            return((wl, wr, tl, tr))
-        else:
-            raise ValueError
-    except:
-        print('err')
-        raise
-
-def readInfosSpeed(data):
-    try:
-        mask = struct.unpack(">B", data[:1])
-
-        if (mask & INFOS_SPEED):
+            return (True,(wl, wr, tl, tr))
+        elif (mask & INFOS_SPEED):
             w, v = struct.unpack(">xff", data)
 
             print(f"Speed w: {w}, speed v: {v}")
-            return((w,v))
-        else:
-            raise ValueError
-    except:
-        print('err')
-        raise
-
-def readInfosRangefinder(data):
-    try:
-        mask = struct.unpack(">B", data[:1])
-
-        if (mask & INFOS_RANGEFINDER):
+            return (True,(w,v))
+        elif (mask & INFOS_RANGEFINDER):
             rf = struct.unpack(">xH", data)
 
             print(f"Rangefinder: {rf} ")
-            return(rf)
+            return(True,(rf))
         else:
-            raise ValueError
-    except:
+            return (False,())
+    except Exception as e:
         print('err')
-        raise
+        print(e)
+        return (False,())
 
-
-def readInfos(data):
-    try:
-        readInfosLed(data)
-        readInfosPos(data)
-        readInfosMotors(data)
-        readInfosWheels(data)
-        readInfosSpeed(data)
-        readInfosRangefinder(data)
-    except:
-        print('err')
 
