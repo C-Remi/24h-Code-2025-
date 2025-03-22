@@ -4,6 +4,30 @@ import math
 INFO_POSITION = 0x01
 INFO_LED = 0x02
 
+def readInfosPos(data):
+    try:
+        view = DataView(data)
+        pos = 0
+
+        mask = view.get_uint_8(pos)
+        pos += 1
+
+        if (mask & INFO_POSITION):
+            position_x = view.get_float_32(pos + 0)
+            
+            position_y = view.get_float_32(pos + 4)
+            position_a = view.get_float_32(pos + 8)
+            pos += 3*4
+
+            finalX = round(position_x * 1000)
+            finalY = round(position_y * 1000)
+            rad = round(position_a * 180 / math.pi)
+            print(f"posX: {finalX} mm, posY: {finalY} mm , posA: {rad} deg")
+            return((finalX, finalY, rad))
+    except:
+        print('err')
+    
+
 def readInfos(data):
     try:
         view = DataView(data)
@@ -19,7 +43,7 @@ def readInfos(data):
             position_a = view.get_float_32(pos + 8)
             pos += 3*4
 
-            print(f"posX: {round(position_x * 1000)} mm, posY: {round(position_y * 1000)} mm , posA: {round(position_a * 180 / math.pi) } deg")
+            print(f"posX: {round(position_x * 1000)} mm, posY: {round(position_y * 1000)} mm , posA: {round(position_a * 180 / math.pi) } deg")    
 
         if (mask & INFO_LED):
             led_r = view.get_uint_8(pos + 0)

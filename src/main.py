@@ -6,7 +6,7 @@ HOST = "haumbot-c5cfb8.local"
 
 
 async def main():
-    robot = Robot(0,0,0, HOST)
+    robot = Robot(0,0,0, HOST, 10,360,100, 0.5)
     
     await robot.activate()
     
