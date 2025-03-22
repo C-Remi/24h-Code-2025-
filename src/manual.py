@@ -2,7 +2,6 @@ import pygame
 from utils.wsclient import WebSocketClient
 from api.infos import readInfos, INFOS_POSITION, INFOS_LED, INFOS_MOTORS, INFOS_RANGEFINDER, INFOS_SPEED, INFOS_WHEELS
 from api.request import reset_position, set_led_color, turtle_move_forward, turtle_rotate
-from utils.tof import TimeOfFlightSensor
 from robot_gps import RobotGps
 from motor import Motor
 import time
@@ -53,7 +52,7 @@ class Robot:
         self.step_angle = step_angle
         self.max_angle = max_angle
         self.path_threshold = path_threshold
-        self.sensor = TimeOfFlightSensor()  # Simulated ToF sensor
+        #self.sensor = TimeOfFlightSensor()  # Simulated ToF sensor
         self.detected_paths = []  # Stores angles with open paths
         self.kp = kp
 
@@ -141,6 +140,11 @@ class Robot:
                 right_stick_y = joystick.get_axis(3) # Right stick (Y-axis)
                 #print(f"Left Stick: X={left_stick_x} | Right Stick: Y={right_stick_y}")
 
+                lb_pressed = joystick.get_button(4)  # LB button index
+                rb_pressed = joystick.get_button(5)  # RB button index
+                #rt = (joystick.get_axis(5) + 1) / 2  # Convert -1 to 1 → 0 to 1
+                #lt = (joystick.get_axis(4) + 1) / 2  # Convert -1 to 1 → 0 to 1
+                    
                 # Print values between -1 and 1
                 if round(left_stick_x,2) > 0.15 or round(left_stick_x,2) < -0.15:
                     left = round(left_stick_x,2)
@@ -152,8 +156,13 @@ class Robot:
                 else:
                     right = 0
 
-                print(f"Left motor: X={left} | Right motor: Y={right}")
-                await self.set_motor_speed(left, right )
+                if lb_pressed:
+                    left = 1
+                if rb_pressed:
+                    right = 1
+
+                print(f"lb_pressed: {lb_pressed}, rb_pressed: {rb_pressed} Left motor: X={left} | Right motor: Y={right}")
+                await self.set_motor_speed(left * 0.5, right * 0.5 )
                     
 
         except KeyboardInterrupt:
