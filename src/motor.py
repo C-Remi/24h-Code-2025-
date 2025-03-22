@@ -18,8 +18,8 @@ class Motors:
         self.vr = max(-1, min(vr, 1))
         motor_buffer = struct.pack('>ff', self.vl, self.vr)
 
-        async with self.socket:
-            await self.socket.send(motor_buffer)
+        async for conn in self.socket:
+            await conn.send(motor_buffer)
 
     async def set_speed_left(self, vl):
         await self.set_motor_speed(vl, self.vr)
