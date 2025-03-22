@@ -1,18 +1,17 @@
 import requests
 
-TARGET='http://192.168.84.6'
+TARGET='http://haumbot-c5cfb8.local'
 
-# URL of the target (adjust the IP/hostname as needed)
-url = f"{TARGET}/led/set_color"
+def set_led_color(color:str = "#000000"):
+    requests.post(f"{TARGET}/led/set_color", data={
+        "ledcolor": color
+    })
 
-# Data to send (mimics the <input name="ledcolor"> value)
-payload = {
-    "ledcolor": "#ffff00"  # Example: red color
-}
-
-# Send the POST request
-response = requests.post(url, data=payload)
-
-# Check the response
-print(f"Status Code: {response.status_code}")
-print(f"Response Body: {response.text}")
+if __name__ == "__main__":
+    import random
+    from time import sleep
+    while True:
+        r, g, b = random.randrange(256), random.randrange(256), random.randrange(256)
+        color_format = f"#{r:02x}{g:02x}{b:02x}"
+        set_led_color(color_format)
+        sleep(0.5)
