@@ -68,12 +68,23 @@ class StateManager:
         async for ws in websockets.connect(ENDPOINT):
             try:
                 await ws.send(flag)
+                while True:
+                    data = await ws.recv()
+                    if isinstance(data, str):
+                        data = data.encode()
 
-                data = await ws.recv()
-                if isinstance(data, str):
-                    data = data.encode()
-
-                self.push_data(name, struct.unpack(format, data))
+                    self.push_data(name, struct.unpack(format, data))
 
             except ConnectionClosedError:
                 continue
+
+    async def join(self):
+        for task in self.tasks:
+            await task
+
+if __name__ == "__main__":
+    async def main():
+        s = StateManager()
+        await s.join()
+
+    asyncio.run(main())
