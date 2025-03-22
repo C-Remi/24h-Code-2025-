@@ -2,7 +2,8 @@ import requests
 
 HOST = "http://haumbot-c5cfb8.local"
 
-def set_led_color(color:str = "#000000"):
+def set_led_color(red, green, blue):
+    color = f"#{red:02x}{green:02x}{blue:02x}"
     requests.post(f"{HOST}/led/set_color", json={
         "ledcolor": color
     }).raise_for_status()
