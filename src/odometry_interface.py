@@ -1,63 +1,111 @@
-import tkinter as tk
+import cv2
+import numpy as np
+import threading
+import time
 
 # Constants
-GRID_SIZE = 50  # Size of each grid square
-CANVAS_WIDTH = 600
-CANVAS_HEIGHT = 600
-ROBOT_SIZE = 40  # Robot's square size
-POINT_RADIUS = 5  # Size of target points
+HEIGHT, WIDTH = 800, 800
 
-# Initial robot position (centered)
-robot_x, robot_y = CANVAS_WIDTH // 2, CANVAS_HEIGHT // 2
+# Shared global resources
+frame = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
+robot_a, robot_x, robot_y = 0, 0, 0
+red_points = []
+lock = threading.Lock()
+running = True  # Control variable to stop threads
 
-# Store clicked points
-points = []
+def draw_rotated_rectangle(frame, position, size, angle):
+    """
+    Draw a rotated rectangle on a frame/image.
+    """
+    center_x, center_y = position
+    width, height = size
+    rotated_rect = ((center_x, center_y), (width, height), angle)
+    box_points = cv2.boxPoints(rotated_rect)
+    box_points = box_points.astype(int)
+    cv2.drawContours(frame, [box_points], contourIdx=0, color=(0, 255, 0), thickness=-1)
+    return frame
 
-def draw_grid():
-    """Draws the background grid."""
-    for x in range(0, CANVAS_WIDTH, GRID_SIZE):
-        canvas.create_line(x, 0, x, CANVAS_HEIGHT, fill="lightgray")
-    for y in range(0, CANVAS_HEIGHT, GRID_SIZE):
-        canvas.create_line(0, y, CANVAS_WIDTH, y, fill="lightgray")
+def update_canvas():
+    global frame, robot_x, robot_y, robot_a, red_points, running
+    while running:
+        with lock:
+            # Create blank canvas
+            frame = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
 
-def draw_robot():
-    """Draws the robot as a square."""
-    x0 = robot_x - ROBOT_SIZE // 2
-    y0 = robot_y - ROBOT_SIZE // 2
-    x1 = robot_x + ROBOT_SIZE // 2
-    y1 = robot_y + ROBOT_SIZE // 2
-    canvas.create_rectangle(x0, y0, x1, y1, fill="blue", outline="black", width=2)
+            # Draw the robot
+            draw_rotated_rectangle(frame, (robot_x, robot_y), (40, 20), robot_a)
 
-def draw_points():
-    """Draws all added points."""
-    for px, py in points:
-        canvas.create_oval(px - POINT_RADIUS, py - POINT_RADIUS,
-                           px + POINT_RADIUS, py + POINT_RADIUS,
-                           fill="red")
+            # Draw all red points
+            for pt in red_points:
+                cv2.circle(frame, pt, 3, (0, 0, 255), -1)  # Red dot
 
-def refresh():
-    """Redraws the entire canvas."""
-    canvas.delete("all")
-    draw_grid()
-    draw_robot()
-    draw_points()
+        time.sleep(0.01)
 
-def add_point(event):
-    """Adds a point where the user clicks."""
-    grid_x = (event.x // GRID_SIZE) * GRID_SIZE + GRID_SIZE // 2
-    grid_y = (event.y // GRID_SIZE) * GRID_SIZE + GRID_SIZE // 2
-    points.append((grid_x, grid_y))
-    refresh()
+def update_robot():
+    global robot_x, robot_y, robot_a, running
+    while running:
+        with lock:
+            # Move the robot
+            robot_x += 5
+            robot_y += 5
+            robot_x %= 500
+            robot_y %= 500
+            robot_a += 1
 
-def launch_graphical_interface():
+        time.sleep(0.01)
 
-    # Tkinter setup
-    root = tk.Tk()
-    root.title("Robot Grid Simulation")
-    canvas = tk.Canvas(root, width=CANVAS_WIDTH, height=CANVAS_HEIGHT, bg="white")
-    canvas.pack()
 
-    canvas.bind("<Button-1>", add_point)
+def update_points():
+    global red_points
 
-    refresh()
-    root.mainloop()
+        # Main thread: Add red points dynamically
+    while running:
+        if np.random.rand() < 0.1:
+            with lock:
+                red_points.append((np.random.randint(0, WIDTH), np.random.randint(0, HEIGHT)))
+                print("Added red point")
+        time.sleep(0.05)
+
+
+def display_window():
+    global frame, running
+
+    while running:
+        with lock:
+            display_frame = frame.copy()
+
+        # Show the updated frame
+        cv2.imshow("Robot Canvas (Double Threads)", display_frame)
+
+        # Check for ESC key to stop
+        if cv2.waitKey(30) == 27:  # ESC key
+            running = False
+            break
+
+    cv2.destroyAllWindows()
+
+def main():
+    global running
+
+    # Start the drawing thread
+    canvas_thread = threading.Thread(target=update_canvas, daemon=True)
+    canvas_thread.start()
+
+    # Start the robot update thread
+    robot_thread = threading.Thread(target=update_robot, daemon=True)
+    robot_thread.start()
+
+    # Start the robot update thread
+    points_thread = threading.Thread(target=update_points, daemon=True)
+    points_thread.start()
+
+    # Start the OpenCV window thread
+    window_thread = threading.Thread(target=display_window)
+    window_thread.start()
+
+    # Wait for the OpenCV window thread to finish
+    window_thread.join()
+    print("Program exited.")
+
+if __name__ == "__main__":
+    main()
