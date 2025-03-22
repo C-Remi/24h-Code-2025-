@@ -1,11 +1,10 @@
 
 from utils.wsclient import WebSocketClient
-from api.infos import readInfos, INFOS_POSITION, INFOS_LED, INFOS_MOTORS, INFOS_RANGEFINDER, INFOS_SPEED, INFOS_WHEELS
+from api.infos import readInfos
 from api.request import reset_position, set_led_color, turtle_move_forward, turtle_rotate
-from utils.tof import TimeOfFlightSensor
 from robot_gps import RobotGps
 from motor import Motor
-import time
+import asyncio
 import struct
 
 period_ms = 500
@@ -52,7 +51,6 @@ class Robot:
         self.step_angle = step_angle
         self.max_angle = max_angle
         self.path_threshold = path_threshold
-        self.sensor = TimeOfFlightSensor()  # Simulated ToF sensor
         self.detected_paths = []  # Stores angles with open paths
         self.kp = kp
 
@@ -167,20 +165,20 @@ class Robot:
 
         print(f"Radial: {radial}° | Left Motor: {left_speed:.2f}, Right Motor: {right_speed:.2f}")
 
-    def rotate_and_scan(self):
+    async def rotate_and_scan(self):
         """Rotates the robot step by step, scanning for open paths."""
         self.detected_paths = []  # Reset detected paths
 
         while self.status_info.get("angle", 0.0) < self.max_angle:
-            distance = self.sensor.get_distance()
+            distance = self.status_info.get("range", 0.0)
             print(f"Angle: {self.status_info.get('angle', 0.0)}° - Distance: {distance} cm")
 
             if distance > self.path_threshold:
                 self.detected_paths.append(self.status_info.get("angle", 0.0))
                 print(f"Path detected at {self.status_info.get('angle', 0.0)}°!")
 
-            self.rotate(self.step_angle) # TODO: implement me
-            time.sleep(0.1)  # Simulate sensor delay
+            turtle_rotate(self._host, self.step_angle)
+            await asyncio.sleep(0.1)  # Simulate sensor delay
 
         print("Scan complete. Paths found at angles:", self.detected_paths)
 
