@@ -102,6 +102,16 @@ class Robot:
             except Exception as e:
                 print("Error while decoding", msg)
 
+            if "xpos" in self.status_info.keys() and \
+                "ypos" in self.status_info.keys() and \
+                "angle" in self.status_info.keys():
+
+                self.gps.add_new_position(
+                    self.status_info.get("xpos"),
+                    self.status_info.get("ypos"),
+                    self.status_info.get("angle"),
+                )
+
     async def activate(self):
         test = True
 
