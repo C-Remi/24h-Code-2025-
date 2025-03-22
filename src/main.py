@@ -5,7 +5,7 @@ from robot import Robot
 HOST="haumbot-c5cfb8.local"
 
 async def main():
-    robot = Robot(0,0,0, HOST)
+    robot = Robot(HOST)
     await robot.activate()
 
 if __name__ == "__main__":

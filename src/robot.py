@@ -20,9 +20,6 @@ class Robot:
 
     def __init__(
         self,
-        x=0,
-        y=0,
-        radial=0,
         host="192.168.84.6",
         step_angle=10,
         max_angle=360,
@@ -30,9 +27,6 @@ class Robot:
         kp=0.1
         ):
         """Initialize Robot with x, y coordinates and radial angle."""
-        self._x = x
-        self._y = y
-        self._radial = radial  # Angle in degrees
         self._host = host
         self._uri_ws_info = f"ws://{self._host}/infos.ws"
         self._uri_ws_motors = f"ws://{self._host}/motors.ws"
@@ -138,7 +132,7 @@ class Robot:
         self.right_motor.set_speed(vr)
         await self._ws_client_motors.send_message(motor_buffer)
         #print(f"motor_buffer: {motor_buffer}")
-        time.sleep(0.1)
+        await asyncio.sleep(0.1)
 
     async def move_straight(self, initial_radial,  radial, base_speed=1.0):
         """
@@ -193,4 +187,4 @@ class Robot:
         print("Scan complete. Paths found at angles:", self.detected_paths)
 
     def __repr__(self):
-        return f"Robot(x={self._x}, y={self._y}, radial={self._radial}°)"
+        return f"Robot:{self.status_info}"
