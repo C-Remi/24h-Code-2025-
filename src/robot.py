@@ -10,7 +10,15 @@ import struct
 
 period_ms = 500
 
+INFOS_POSITION = b"\x01"
+INFOS_LED = b"\x02"
+INFOS_MOTORS = b"\x04"
+INFOS_WHEELS = b"\x08"
+INFOS_SPEED = b"\x10"
+INFOS_RANGEFINDER = b"\x20"
+
 class Robot:
+
     def __init__(
         self,
         x=0,
@@ -29,8 +37,16 @@ class Robot:
         self._host = host
         self._uri_ws_info = f"ws://{self._host}/infos.ws"
         self._uri_ws_motors = f"ws://{self._host}/motors.ws"
-        self._ws_client_info = WebSocketClient(self._uri_ws_info)
         self._ws_client_motors = WebSocketClient(self._uri_ws_motors)
+
+        self._uri_ws_info = f"ws://{self._host}/infos.ws"
+        self.ws_info_pos = WebSocketClient(self._uri_ws_info)
+        self.ws_info_led = WebSocketClient(self._uri_ws_info)
+        self.ws_info_motor = WebSocketClient(self._uri_ws_info)
+        self.ws_info_wheels = WebSocketClient(self._uri_ws_info)
+        self.ws_info_speed = WebSocketClient(self._uri_ws_info)
+        self.ws_info_range = WebSocketClient(self._uri_ws_info)
+
 
         self.step_angle = step_angle
         self.max_angle = max_angle
@@ -46,6 +62,30 @@ class Robot:
         reset_position(self._host)
         set_led_color(self._host, "#ffffff")
 
+    async def init_infos_ws(self):
+        if self.ws_info_pos.is_closed():
+            await self.ws_info_pos.connect()
+            await self.ws_info_pos.send_message(INFOS_POSITION)
+
+        if self.ws_info_led.is_closed():
+            await self.ws_info_led.connect()
+            await self.ws_info_led.send_message(INFOS_LED)
+
+        if self.ws_info_motor.is_closed():
+            await self.ws_info_motor.connect()
+            await self.ws_info_motor.send_message(INFOS_MOTORS)
+
+        if self.ws_info_wheels.is_closed():
+            await self.ws_info_wheels.connect()
+            await self.ws_info_wheels.send_message(INFOS_WHEELS)
+
+        if self.ws_info_speed.is_closed():
+            await self.ws_info_speed.connect()
+            await self.ws_info_speed.send_message(INFOS_SPEED)
+
+        if self.ws_info_range.is_closed():
+            await self.ws_info_range.connect()
+            await self.ws_info_range.send_message(INFOS_RANGEFINDER)
 
     @property
     def x(self):
@@ -92,18 +132,21 @@ class Robot:
             if self._ws_client_motors.is_closed():
                 await self._ws_client_motors.connect()
 
-            if self._ws_client_info.is_closed():
-                await self._ws_client_info.connect()
-                print(b'2' + bytes([INFOS_POSITION | INFOS_LED | INFOS_MOTORS | INFOS_RANGEFINDER | INFOS_SPEED | INFOS_WHEELS]))
-                await self._ws_client_info.send_message(b'2' + bytes([INFOS_POSITION | INFOS_LED | INFOS_MOTORS | INFOS_RANGEFINDER | INFOS_SPEED | INFOS_WHEELS]))
-                
+            await self.init_infos_ws()
 
-            # Read INFO WS
-            msg = await self._ws_client_info.receive_message()
-            try:
-                readInfos(msg)
-            except:
-                pass
+            for ws in (
+                self.ws_info_pos,
+                self.ws_info_led,
+                self.ws_info_motor,
+                self.ws_info_wheels,
+                self.ws_info_speed,
+                self.ws_info_range,
+            ):
+                msg = await ws.receive_message()
+                try:
+                    status, data = readInfos(msg)
+                except Exception as e:
+                    print("Error while decoding", msg)
 
     async def set_motor_speed(self, vl, vr):
         vl = max(-1, min(vl, 1))
