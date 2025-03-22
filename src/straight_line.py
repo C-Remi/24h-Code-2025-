@@ -3,6 +3,7 @@ import websockets
 import time
 import math
 import asyncio
+import sys
 
 # Global variables
 ws = None
@@ -21,20 +22,21 @@ async def send_motors(vl, vr):
     vl = max(-1, min(vl, 1))
     vr = max(-1, min(vr, 1))
     motor_buffer = struct.pack('ff', vl, vr)
+    print(vl, vr)
     print(motor_buffer)
 
-    if ws and not ws.closed:
-        try:
-            await ws.send(motor_buffer)
-        except Exception as e:
-            print(f"Error sending data: {e}")
-    else:
-        # Open a new connection if no existing one
-        try:
+    # Print the byte length and the actual byte content
+    print(f"Motor buffer length: {len(motor_buffer)} bytes")
+    print(f"Motor buffer (hex): {motor_buffer.hex()}")
+
+    try:
+        while(1):
             ws = await websockets.connect(f'ws://{TARGET}/motors.ws')
             await ws.send(motor_buffer)
-        except Exception as e:
-            print(f"Error connecting to WebSocket: {e}")
+            print('loop')
+            time.sleep(0.1)
+    except Exception as e:
+        print(f"Error sending data: {e}")
 
 if __name__ == "__main__":
-    asyncio.run(send_motors(10, 10))
+    asyncio.run(send_motors(0.33, 1))
