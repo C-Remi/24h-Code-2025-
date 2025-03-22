@@ -50,5 +50,8 @@ class Robot:
 
 
 if __name__ == "__main__":
-    r = Robot()
-    asyncio.run(r.start())
+    async def main():
+        r = Robot()
+        await r.start()
+
+    asyncio.run(main())

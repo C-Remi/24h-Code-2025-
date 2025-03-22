@@ -22,5 +22,8 @@ class Robot:
             await asyncio.sleep(0.1)
 
 if __name__ == "__main__":
-    r = Robot()
-    asyncio.run(r.start())
+    async def main():
+        r = Robot()
+        await r.start()
+
+    asyncio.run(main())
