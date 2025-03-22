@@ -2,7 +2,7 @@
 from utils.wsclient import WebSocketClient
 from api.infos import readInfos
 from api.request import reset_position, set_led_color, turtle_move_forward, turtle_rotate
-from robot_gps import RobotGps
+from state import StateManager
 from motor import Motor
 import asyncio
 import struct
@@ -28,19 +28,10 @@ class Robot:
         ):
         """Initialize Robot with x, y coordinates and radial angle."""
         self._host = host
-        self._uri_ws_info = f"ws://{self._host}/infos.ws"
         self._uri_ws_motors = f"ws://{self._host}/motors.ws"
         self._ws_client_motors = WebSocketClient(self._uri_ws_motors)
 
-        self._uri_ws_info = f"ws://{self._host}/infos.ws"
-        self.ws_info_pos = WebSocketClient(self._uri_ws_info)
-        self.ws_info_led = WebSocketClient(self._uri_ws_info)
-        self.ws_info_motor = WebSocketClient(self._uri_ws_info)
-        self.ws_info_wheels = WebSocketClient(self._uri_ws_info)
-        self.ws_info_speed = WebSocketClient(self._uri_ws_info)
-        self.ws_info_range = WebSocketClient(self._uri_ws_info)
-        self.status_info = dict()
-
+        self.state = StateManager()
 
         self.step_angle = step_angle
         self.max_angle = max_angle
@@ -51,60 +42,8 @@ class Robot:
         self.left_motor = Motor("left_motor")
         self.right_motor = Motor("right_motor")
 
-        self.gps = RobotGps()
         reset_position(self._host)
         set_led_color(self._host, "#ffffff")
-
-    async def init_infos_ws(self):
-        if self.ws_info_pos.is_closed():
-            await self.ws_info_pos.connect()
-            await self.ws_info_pos.send_message(INFOS_POSITION)
-
-        if self.ws_info_led.is_closed():
-            await self.ws_info_led.connect()
-            await self.ws_info_led.send_message(INFOS_LED)
-
-        if self.ws_info_motor.is_closed():
-            await self.ws_info_motor.connect()
-            await self.ws_info_motor.send_message(INFOS_MOTORS)
-
-        if self.ws_info_wheels.is_closed():
-            await self.ws_info_wheels.connect()
-            await self.ws_info_wheels.send_message(INFOS_WHEELS)
-
-        if self.ws_info_speed.is_closed():
-            await self.ws_info_speed.connect()
-            await self.ws_info_speed.send_message(INFOS_SPEED)
-
-        if self.ws_info_range.is_closed():
-            await self.ws_info_range.connect()
-            await self.ws_info_range.send_message(INFOS_RANGEFINDER)
-
-    async def update_status(self):
-        for ws in (
-            self.ws_info_pos,
-            self.ws_info_led,
-            self.ws_info_motor,
-            self.ws_info_wheels,
-            self.ws_info_speed,
-            self.ws_info_range,
-        ):
-            msg = await ws.receive_message()
-            try:
-                data = readInfos(msg)
-                self.status_info.update(data)
-            except Exception as e:
-                print("Error while decoding", msg)
-
-            if "xpos" in self.status_info.keys() and \
-                "ypos" in self.status_info.keys() and \
-                "angle" in self.status_info.keys():
-
-                self.gps.add_new_position(
-                    self.status_info.get("xpos"),
-                    self.status_info.get("ypos"),
-                    self.status_info.get("angle"),
-                )
 
     async def activate(self):
         test = True
@@ -113,9 +52,6 @@ class Robot:
             # Connect to information WS
             if self._ws_client_motors.is_closed():
                 await self._ws_client_motors.connect()
-
-            await self.init_infos_ws()
-            await self.update_status()
 
             if test:
                 test= False
@@ -185,6 +121,3 @@ class Robot:
             await asyncio.sleep(0.1)  # Simulate sensor delay
 
         print("Scan complete. Paths found at angles:", self.detected_paths)
-
-    def __repr__(self):
-        return f"Robot:{self.status_info}"
