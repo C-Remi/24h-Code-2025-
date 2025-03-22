@@ -63,7 +63,7 @@ def update_points():
         if np.random.rand() < 0.1:
             with lock:
                 red_points.append((np.random.randint(0, WIDTH), np.random.randint(0, HEIGHT)))
-                print("Added red point")
+
         time.sleep(0.05)
 
 
