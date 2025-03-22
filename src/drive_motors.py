@@ -4,7 +4,7 @@ import struct
 
 from read_pos import log_pos_data
 
-ENDPOINT = "ws://haumbot-c5cfb8.local/motors.ws"
+ENDPOINT = "ws://192.168.84.6/motors.ws"
 DATA_FORMAT = ">ff"
 
 SPEED_INCREMENT = 0.005

@@ -2,7 +2,7 @@ from wsclient import WebSocketClient
 import asyncio
 import struct
 
-ENDPOINT = "ws://haumbot-c5cfb8.local/infos.ws"
+ENDPOINT = "ws://192.168.84.6/infos.ws"
 DATA_FORMAT = ">xfff"
 
 async def log_pos_data():

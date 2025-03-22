@@ -1,4 +1,3 @@
-from utils.dataview import DataView
 import math
 
 INFOS_POSITION = 0x01
@@ -10,18 +9,10 @@ INFOS_RANGEFINDER = 0x20
 
 def readInfosPos(data):
     try:
-        view = DataView(data)
-        pos = 0
-
-        mask = view.get_uint_8(pos)
-        pos += 1
+        mask = struct.unpack(">B", data[:1])
 
         if (mask & INFOS_POSITION):
-            position_x = view.get_float_32(pos + 0)
-            
-            position_y = view.get_float_32(pos + 4)
-            position_a = view.get_float_32(pos + 8)
-            pos += 3*4
+            position_x, position_y, position_a = struct.unpack(">xfff", data)
 
             finalX = round(position_x * 1000)
             finalY = round(position_y * 1000)
@@ -30,99 +21,87 @@ def readInfosPos(data):
             return((finalX, finalY, rad))
     except:
         print('err')
-        
+
 def readInfosLed(data):
     try:
-        view = DataView(data)
-        pos = 0
-
-        mask = view.get_uint_8(pos)
-        pos += 1
+        mask = struct.unpack(">B", data[:1])
 
         if (mask & INFOS_LED):
-            led_r = view.get_uint_8(pos + 0)
-            led_g = view.get_uint_8(pos + 1)
-            led_b = view.get_uint_8(pos + 2)
-            pos += 3
+            led_r, led_g, led_b = struct.unpack(">Bcc", data)
 
             print(f"ledR: {led_r}, ledG: {led_g}, ledB: {led_b}")
             return((led_r, led_g, led_b))
+        else:
+            raise ValueError
     except:
         print('err')
-    
+        raise
+
 def readInfosMotors(data):
     try:
-        view = DataView(data)
-        pos = 0
 
-        mask = view.get_uint_8(pos)
-        pos += 1
+        mask = struct.unpack(">B", data[:1])
 
         if (mask & INFOS_MOTORS):
-            ml = view.get_float_32(pos + 0)
-            mr = view.get_float_32(pos + 4)
-            pos += 2*4
+            ml, mr = struct.unpack(">xff", data)
 
             print(f"Motor left: {ml}, motor right: {mr}")
             return((ml, mr))
+        else:
+            raise ValueError
     except:
         print('err')
+        raise
 
 def readInfosWheels(data):
     try:
-        view = DataView(data)
-        pos = 0
 
-        mask = view.get_uint_8(pos)
+        mask = struct.unpack(">B", data[:1])
         pos += 1
 
         if (mask & INFOS_WHEELS):
-            wl = view.get_uint_16(pos + 0)
-            wr = view.get_uint_16(pos + 2)
-            tl = view.get_uint_16(pos + 4)
-            tr = view.get_uint_16(pos + 6)
+            wl, wr, tl, tr = struct.unpack(">xHHH", data)
+
             pos += 4*2
 
             print(f"Wheel left: {wl}, tl: {tr}, wheel right: {wr}, tr: {tr} ")
             return((wl, wr, tl, tr))
+        else:
+            raise ValueError
     except:
         print('err')
+        raise
 
 def readInfosSpeed(data):
     try:
-        view = DataView(data)
-        pos = 0
-
-        mask = view.get_uint_8(pos)
-        pos += 1
+        mask = struct.unpack(">B", data[:1])
 
         if (mask & INFOS_SPEED):
-            w = view.get_float_32(pos + 0)
-            v = view.get_float_32(pos + 4)
-            pos += 4*2
+            w, v = struct.unpack(">xff", data)
 
             print(f"Speed w: {w}, speed v: {v}")
             return((w,v))
+        else:
+            raise ValueError
     except:
         print('err')
-        
+        raise
+
 def readInfosRangefinder(data):
     try:
-        view = DataView(data)
-        pos = 0
-
-        mask = view.get_uint_8(pos)
-        pos += 1
+        mask = struct.unpack(">B", data[:1])
 
         if (mask & INFOS_RANGEFINDER):
-            rf = view.get_uint_16(pos + 0)
-            pos += 2
+            rf = struct.unpack(">xH", data)
 
             print(f"Rangefinder: {rf} ")
             return(rf)
+        else:
+            raise ValueError
     except:
         print('err')
-        
+        raise
+
 
 def readInfos(data):
     try:
@@ -134,4 +113,4 @@ def readInfos(data):
         readInfosRangefinder(data)
     except:
         print('err')
-    
+

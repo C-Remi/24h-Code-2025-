@@ -1,7 +1,7 @@
 import asyncio
 from robot import Robot
 
-HOST = "haumbot-c5cfb8.local"
+HOST = "192.168.84.6"
 
 async def main():
     robot = Robot(0,0,0, HOST)

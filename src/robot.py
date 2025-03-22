@@ -13,12 +13,12 @@ period_ms = 500
 class Robot:
     def __init__(
         self,
-        x=0, 
-        y=0, 
-        radial=0, 
-        host="haumbot-c5cfb8.local", 
-        step_angle=10, 
-        max_angle=360, 
+        x=0,
+        y=0,
+        radial=0,
+        host="192.168.84.6",
+        step_angle=10,
+        max_angle=360,
         path_threshold=100,
         kp=0.1
         ):
@@ -27,21 +27,21 @@ class Robot:
         self._y = y
         self._radial = radial  # Angle in degrees
         self._host = host
-        self._uri_ws_info = f"ws://{self._host}/infos.ws"  
-        self._uri_ws_motors = f"ws://{self._host}/motors.ws"  
+        self._uri_ws_info = f"ws://{self._host}/infos.ws"
+        self._uri_ws_motors = f"ws://{self._host}/motors.ws"
         self._ws_client_info = WebSocketClient(self._uri_ws_info)
         self._ws_client_motors = WebSocketClient(self._uri_ws_motors)
-        
+
         self.step_angle = step_angle
         self.max_angle = max_angle
         self.path_threshold = path_threshold
         self.sensor = TimeOfFlightSensor()  # Simulated ToF sensor
         self.detected_paths = []  # Stores angles with open paths
         self.kp = kp
-        
+
         self.left_motor = Motor("left_motor")
         self.right_motor = Motor("right_motor")
-        
+
         self.gps = RobotGps()
         reset_position(self._host)
         set_led_color(self._host, "#ffffff")
@@ -88,36 +88,37 @@ class Robot:
 
     async def activate(self):
         while True:
-            # Connect to information WS    
+            # Connect to information WS
             if self._ws_client_motors.is_closed():
                 await self._ws_client_motors.connect()
-            
+
             if self._ws_client_info.is_closed():
                 await self._ws_client_info.connect()
                 await self._ws_client_info.send_message(b'\x03')
 
             # Read INFO WS
             msg = await self._ws_client_info.receive_message()
-            (x,y,r) = readInfosPos(msg)
+            try:
+                (x,y,r) = readInfosPos(msg)
+                await self.move_straight(0,r)
+            except:
+                pass
             #print(x,y,r)
             #self.gps.add_new_position(x,y,r)
-            
 
-            await self.move_straight(0,r)
-            
-            #readInfos(msg)          
-    
+            #readInfos(msg)
+
     async def set_motor_speed(self, vl, vr):
         vl = max(-1, min(vl, 1))
         vr = max(-1, min(vr, 1))
         motor_buffer = struct.pack('ff', vl, vr)
 
         self.left_motor.set_speed(vl)
-        self.right_motor.set_speed(vr)  
+        self.right_motor.set_speed(vr)
         await self._ws_client_motors.send_message(motor_buffer)
         #print(f"motor_buffer: {motor_buffer}")
         time.sleep(0.1)
-    
+
     async def move_straight(self, initial_radial,  radial, base_speed=1.0):
         """
         Moves the robot straight based on position and radial angle.
@@ -127,17 +128,17 @@ class Robot:
         :param base_speed: Base motor speed (float)
         """
         # Normalize radial to range [-180, 180] for better error correction
-        #heading_error = (radial + 180) % 360 - 180  
+        #heading_error = (radial + 180) % 360 - 180
 
         # Adjust motor speed to compensate for error
-        #correction = self.kp * heading_error  
-        
+        #correction = self.kp * heading_error
+
         # Calculate deviation from initial radial
-        heading_error = radial - initial_radial  
+        heading_error = radial - initial_radial
 
         # Compute correction based on heading error
-        correction = self.kp * heading_error  
-        
+        correction = self.kp * heading_error
+
         left_speed = base_speed - correction
         right_speed = base_speed + correction
 
@@ -147,7 +148,7 @@ class Robot:
 
         # Apply speeds to motors
         await self.set_motor_speed(left_speed, right_speed)
-        
+
         #self.motor_left.set_speed(left_speed)
         #self.motor_right.set_speed(right_speed)
 
@@ -169,7 +170,7 @@ class Robot:
             time.sleep(0.1)  # Simulate sensor delay
 
         self.angle = 0  # Reset rotation
-        print("Scan complete. Paths found at angles:", self.detected_paths)  
+        print("Scan complete. Paths found at angles:", self.detected_paths)
 
     def __repr__(self):
         return f"Robot(x={self._x}, y={self._y}, radial={self._radial}°)"

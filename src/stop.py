@@ -1,7 +1,7 @@
 import struct
 from wsclient import WebSocketClient
 
-ENDPOINT = "ws://haumbot-c5cfb8.local/motors.ws"
+ENDPOINT = "ws://192.168.84.6/motors.ws"
 
 async def stop():
     ws = WebSocketClient(ENDPOINT)
