@@ -1,0 +1,15 @@
+{
+  "pin_mr": 2,
+  "pin_i2c_r_sda": 5,
+  "pin_i2c_rangefinder_sda": 20,
+  "pin_i2c_r_scl": 6,
+  "pin_led": 0,
+  "pin_i2c_rangefinder_scl": 21,
+  "Kw": 0.0007388499,
+  "pin_ml": 1,
+  "ml_inv": true,
+  "mr_inv": false,
+  "pin_i2c_l_sda": 7,
+  "Kv": 0.0005,
+  "pin_i2c_l_scl": 10
+}
