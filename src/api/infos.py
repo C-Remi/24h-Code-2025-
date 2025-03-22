@@ -1,4 +1,4 @@
-from dataview import DataView
+from utils.dataview import DataView
 import math
 
 INFO_POSITION = 0x01

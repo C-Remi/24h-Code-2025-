@@ -1,6 +1,7 @@
 
-from wsclient import WebSocketClient
-from infos import readInfos
+from utils.wsclient import WebSocketClient
+from api.infos import readInfos
+from api.request import reset_position, set_led_color
 
 class Robot:
     def __init__(self, x=0, y=0, radial=0, host="haumbot-c5cfb8.local"):
@@ -13,6 +14,9 @@ class Robot:
         self._uri_ws_motors = f"ws://{self._host}/motors.ws"  
         self._ws_client_info = WebSocketClient(self._uri_ws_info)
         self._ws_client_motors = WebSocketClient(self._uri_ws_motors)
+        
+        reset_position(self._host)
+        set_led_color(self._host, "#ffffff")
 
 
     @property
