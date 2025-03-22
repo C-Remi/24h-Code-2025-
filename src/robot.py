@@ -1,7 +1,7 @@
 
 from utils.wsclient import WebSocketClient
 from api.infos import readInfos, INFOS_POSITION, INFOS_LED, INFOS_MOTORS, INFOS_RANGEFINDER, INFOS_SPEED, INFOS_WHEELS
-from api.request import reset_position, set_led_color
+from api.request import reset_position, set_led_color, turtle_move_forward, turtle_rotate
 from utils.tof import TimeOfFlightSensor
 from robot_gps import RobotGps
 from motor import Motor
@@ -132,6 +132,25 @@ class Robot:
             if self._ws_client_motors.is_closed():
                 await self._ws_client_motors.connect()
 
+            if self._ws_client_info.is_closed():
+                await self._ws_client_info.connect()
+                print(b'2' + bytes([INFOS_POSITION | INFOS_LED | INFOS_MOTORS | INFOS_RANGEFINDER | INFOS_SPEED | INFOS_WHEELS]))
+                await self._ws_client_info.send_message(b'2' + bytes([INFOS_POSITION | INFOS_LED | INFOS_MOTORS | INFOS_RANGEFINDER | INFOS_SPEED | INFOS_WHEELS]))
+                
+
+            test = True
+            if test:
+                test= True
+                turtle_move_forward(self._host, 10)
+                turtle_rotate(self._host, 90)
+                #self.rotate_and_scan()
+
+            # Read INFO WS
+            msg = await self._ws_client_info.receive_message()
+            try:
+                readInfos(msg)
+            except:
+                pass
             await self.init_infos_ws()
 
             for ws in (
@@ -198,18 +217,18 @@ class Robot:
         """Rotates the robot step by step, scanning for open paths."""
         self.detected_paths = []  # Reset detected paths
 
-        while self.angle < self.max_angle:
+        while self.radial < self.max_angle:
             distance = self.sensor.get_distance()
-            print(f"Angle: {self.angle}° - Distance: {distance} cm")
+            print(f"Angle: {self.radial}° - Distance: {distance} cm")
 
             if distance > self.path_threshold:
-                self.detected_paths.append(self.angle)
-                print(f"Path detected at {self.angle}°!")
+                self.detected_paths.append(self.radial)
+                print(f"Path detected at {self.radial}°!")
 
-            self.angle += self.step_angle
+            self.radial += self.step_angle
             time.sleep(0.1)  # Simulate sensor delay
 
-        self.angle = 0  # Reset rotation
+        self.radial = 0  # Reset rotation
         print("Scan complete. Paths found at angles:", self.detected_paths)
 
     def __repr__(self):
