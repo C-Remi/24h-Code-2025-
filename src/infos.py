@@ -1,15 +1,10 @@
-import time
-import struct
-import asyncio
-import websockets
-import math
 from dataview import DataView
+import math
 
-HOST = "haumbot-c5cfb8.local"
 INFO_POSITION = 0x01
 INFO_LED = 0x02
 
-def readData(data):
+def readInfos(data):
     view = DataView(data)
     pos = 0
 
@@ -32,25 +27,4 @@ def readData(data):
         pos += 3
 
         print(f"ledR: {led_r}, ledG: {led_g}, ledB: {led_b}")
-    
-
-
-async def listen():
-    uri = f"ws://{HOST}/infos.ws"  # Replace with your WebSocket server URL
-    print(uri)
-    async with websockets.connect(uri) as websocket:
-        print(f"Connected to {uri}")
-        try:
-            while True:
-                await websocket.send(b"\x03")
-                message = await websocket.recv()
-
-                print(f"Received: {message}")
-                readData(message)
-
-        except websockets.ConnectionClosed:
-            print("Connection closed")
-
-if __name__ == "__main__":
-    asyncio.run(listen())
     
