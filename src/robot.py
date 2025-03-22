@@ -1,10 +1,24 @@
 
 from utils.wsclient import WebSocketClient
-from api.infos import readInfos
+from api.infos import readInfos, readInfosPos
 from api.request import reset_position, set_led_color
+from utils.tof import TimeOfFlightSensor
+from robot_gps import RobotGps
+import time
+import struct
 
 class Robot:
-    def __init__(self, x=0, y=0, radial=0, host="haumbot-c5cfb8.local"):
+    def __init__(
+        self,
+        x=0, 
+        y=0, 
+        radial=0, 
+        host="haumbot-c5cfb8.local", 
+        step_angle=10, 
+        max_angle=360, 
+        path_threshold=100,
+        kp=0.1
+        ):
         """Initialize Robot with x, y coordinates and radial angle."""
         self._x = x
         self._y = y
@@ -15,6 +29,13 @@ class Robot:
         self._ws_client_info = WebSocketClient(self._uri_ws_info)
         self._ws_client_motors = WebSocketClient(self._uri_ws_motors)
         
+        self.step_angle = step_angle
+        self.max_angle = max_angle
+        self.path_threshold = path_threshold
+        self.sensor = TimeOfFlightSensor()  # Simulated ToF sensor
+        self.detected_paths = []  # Stores angles with open paths
+        self.kp = kp
+        self.gps = RobotGps()
         reset_position(self._host)
         set_led_color(self._host, "#ffffff")
 
@@ -67,11 +88,71 @@ class Robot:
             if self._ws_client_info.is_closed():
                 await self._ws_client_info.connect()
                 await self._ws_client_info.send_message(b'\x03')
-            
 
             # Read INFO WS
-            readInfos(await self._ws_client_info.receive_message())
+            msg = await self._ws_client_info.receive_message()
+            (x,y,r) = readInfosPos(msg)
+            self.gps.add_new_position(x,y,r)
             
+
+            await self.move_straight(x,y,r)
+            
+            #readInfos(msg)          
+    
+    async def set_motor_speed(self, vl, vr):
+        vl = max(-1, min(vl, 1))
+        vr = max(-1, min(vr, 1))
+        motor_buffer = struct.pack('ff', vl, vr)
+    
+        await self._ws_client_motors.send_message(motor_buffer)
+        #print(f"motor_buffer: {motor_buffer}")
+        time.sleep(0.1)
+    
+    async def move_straight(self, x, y, radial, base_speed=1.0):
+        """
+        Moves the robot straight based on position and radial angle.
+        :param x: Current X position
+        :param y: Current Y position
+        :param radial: Current orientation (degrees)
+        :param base_speed: Base motor speed (float)
+        """
+        # Normalize radial to range [-180, 180] for better error correction
+        heading_error = (radial + 180) % 360 - 180  
+
+        # Adjust motor speed to compensate for error
+        correction = self.kp * heading_error  
+        left_speed = base_speed - correction
+        right_speed = base_speed + correction
+
+        # Ensure speeds remain within a valid range (0.0 to 1.0)
+        left_speed = max(0.0, min(1.0, left_speed))
+        right_speed = max(0.0, min(1.0, right_speed))
+
+        # Apply speeds to motors
+        await self.set_motor_speed(left_speed, right_speed)
+        
+        #self.motor_left.set_speed(left_speed)
+        #self.motor_right.set_speed(right_speed)
+
+        print(f"Radial: {radial}° | Left Motor: {left_speed:.2f}, Right Motor: {right_speed:.2f}")
+
+    def rotate_and_scan(self):
+        """Rotates the robot step by step, scanning for open paths."""
+        self.detected_paths = []  # Reset detected paths
+
+        while self.angle < self.max_angle:
+            distance = self.sensor.get_distance()
+            print(f"Angle: {self.angle}° - Distance: {distance} cm")
+
+            if distance > self.path_threshold:
+                self.detected_paths.append(self.angle)
+                print(f"Path detected at {self.angle}°!")
+
+            self.angle += self.step_angle
+            time.sleep(0.1)  # Simulate sensor delay
+
+        self.angle = 0  # Reset rotation
+        print("Scan complete. Paths found at angles:", self.detected_paths)  
 
     def __repr__(self):
         return f"Robot(x={self._x}, y={self._y}, radial={self._radial}°)"
