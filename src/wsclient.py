@@ -29,7 +29,8 @@ class WebSocketClient:
         if self.websocket:
             try:
                 message = await self.websocket.recv()
-                print(f"Received: {message}")
+                # DEBUG
+                #print(f"Received: {message}")
                 return message
             except websockets.exceptions.ConnectionClosed:
                 print("Connection closed by server.")
