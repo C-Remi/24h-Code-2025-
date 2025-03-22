@@ -4,8 +4,11 @@ from api.infos import readInfos, readInfosPos
 from api.request import reset_position, set_led_color
 from utils.tof import TimeOfFlightSensor
 from robot_gps import RobotGps
+from motor import Motor
 import time
 import struct
+
+period_ms = 500
 
 class Robot:
     def __init__(
@@ -35,6 +38,10 @@ class Robot:
         self.sensor = TimeOfFlightSensor()  # Simulated ToF sensor
         self.detected_paths = []  # Stores angles with open paths
         self.kp = kp
+        
+        self.left_motor = Motor("left_motor")
+        self.right_motor = Motor("right_motor")
+        
         self.gps = RobotGps()
         reset_position(self._host)
         set_led_color(self._host, "#ffffff")
@@ -92,10 +99,11 @@ class Robot:
             # Read INFO WS
             msg = await self._ws_client_info.receive_message()
             (x,y,r) = readInfosPos(msg)
-            self.gps.add_new_position(x,y,r)
+            #print(x,y,r)
+            #self.gps.add_new_position(x,y,r)
             
 
-            await self.move_straight(x,y,r)
+            await self.move_straight(0,r)
             
             #readInfos(msg)          
     
@@ -103,12 +111,14 @@ class Robot:
         vl = max(-1, min(vl, 1))
         vr = max(-1, min(vr, 1))
         motor_buffer = struct.pack('ff', vl, vr)
-    
+
+        self.left_motor.set_speed(vl)
+        self.right_motor.set_speed(vr)  
         await self._ws_client_motors.send_message(motor_buffer)
         #print(f"motor_buffer: {motor_buffer}")
         time.sleep(0.1)
     
-    async def move_straight(self, x, y, radial, base_speed=1.0):
+    async def move_straight(self, initial_radial,  radial, base_speed=1.0):
         """
         Moves the robot straight based on position and radial angle.
         :param x: Current X position
@@ -117,10 +127,17 @@ class Robot:
         :param base_speed: Base motor speed (float)
         """
         # Normalize radial to range [-180, 180] for better error correction
-        heading_error = (radial + 180) % 360 - 180  
+        #heading_error = (radial + 180) % 360 - 180  
 
         # Adjust motor speed to compensate for error
+        #correction = self.kp * heading_error  
+        
+        # Calculate deviation from initial radial
+        heading_error = radial - initial_radial  
+
+        # Compute correction based on heading error
         correction = self.kp * heading_error  
+        
         left_speed = base_speed - correction
         right_speed = base_speed + correction
 
