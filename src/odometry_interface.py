@@ -53,9 +53,11 @@ def update_robot():
         with lock:
             # Move the robot
             if global_state is not None:
+                print(global_state)
+                print(global_state.records)
                 if len(global_state.records['position']) > 2:
-                    robot_x = (global_state.records['position'][-1][1][0] - global_state.records['position'][0][1][0]) * 10000
-                    robot_y = (global_state.records['position'][-1][1][1] - global_state.records['position'][0][1][1]) * 10000
+                    robot_x = (global_state.records['position'][-1][1][0] - global_state.records['position'][0][1][0]) * 1000
+                    robot_y = (global_state.records['position'][-1][1][1] - global_state.records['position'][0][1][1]) * 1000
                     robot_a = (global_state.records['position'][-1][1][2]/3.1415926)*180
                     print('ROBOT : ', robot_x, robot_y, robot_a)
 
@@ -65,7 +67,6 @@ def update_robot():
                     py = robot_y + last_dist * np.sin(global_state.records['position'][-1][1][2])
 
                     red_points.append((int(px), int(py)))
-                    #red_points.append((-120, 216))
                     print('POINT : ', px, py)
 
 
