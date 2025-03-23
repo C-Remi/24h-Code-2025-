@@ -66,14 +66,18 @@ class StateManager:
 
     async def _subscribe(self, name, flag, format):
         async for ws in websockets.connect(ENDPOINT):
+            print(name, flag, format, "start")
             try:
-                await ws.send(flag)
+                await ws.send(b'2'+flag)
+                print(name, flag, format, "flag sent")
                 while True:
                     data = await ws.recv()
+                    print(name, flag, format, "message:", data)
                     if isinstance(data, str):
                         data = data.encode()
 
-                    self.push_data(name, struct.unpack(format, data))
+                    if flag == data[:1]:
+                        self.push_data(name, struct.unpack(format, data))
 
             except ConnectionClosedError:
                 continue

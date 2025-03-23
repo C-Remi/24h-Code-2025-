@@ -23,4 +23,5 @@ def reset_position():
 
 
 if __name__ == "__main__":
+    reset_position()
     set_led_color(0, 0, 255)
