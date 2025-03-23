@@ -34,16 +34,21 @@ class Robot:
         set_led_color(255,0,0)
 
         for (cmd, val) in self.commands:
+
             if(cmd == "TURN"):
                 if(val != 0):
                     print(f"{cmd} : {val}")
+                    if val == 90:
+                        val = 80
+                    if val == -90:
+                        val = 270
                     turtle_rotate(val)
             if(cmd == "MOVE"):
                 if(val != 0):
                     print(f"{cmd} : {val}")
                     turtle_move_forward(val)
 
-            await asyncio.sleep(3) 
+            await asyncio.sleep(5) 
         set_led_color(0,256,0)
             
                         
