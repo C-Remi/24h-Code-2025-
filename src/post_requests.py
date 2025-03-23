@@ -9,12 +9,12 @@ def set_led_color(red, green, blue):
     }).raise_for_status()
 
 def turtle_move_forward(distance_mm):
-    requests.post(f"{HOST}/turtle/send", data={
+    requests.post(f"{HOST}/turtle/send", json={
         "dist": distance_mm, "type": "dist"
     }).raise_for_status()
 
 def turtle_rotate(angle):
-    requests.post(f"{HOST}/turtle/send", data={
+    requests.post(f"{HOST}/turtle/send", json={
         "angle": angle, "type": "angle"
     }).raise_for_status()
 
