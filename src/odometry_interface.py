@@ -36,10 +36,15 @@ def update_canvas():
             # Draw the robot
             draw_rotated_rectangle(frame, ((WIDTH//2) + robot_x, (HEIGHT//2) + robot_y), (40, 20), robot_a)
 
+            if len(red_points) > 1024:
+                red_points = red_points[-1024:]
+
             # Draw all red points
+            i=0
             for pt in red_points:
+                i+=1
                 npt = ((WIDTH//2) + pt[0], (HEIGHT//2) + pt[1])
-                cv2.circle(frame, npt, 3, (0, 0, 255), -1)  # Red dot
+                cv2.circle(frame, npt, 3, (0, 0, int(255*(i/len(red_points)))), -1)  # Red dot
 
         time.sleep(0.01)
 
@@ -53,13 +58,11 @@ def update_robot():
         with lock:
             # Move the robot
             if global_state is not None:
-                print(global_state)
-                print(global_state.records)
                 if len(global_state.records['position']) > 2:
                     robot_x = (global_state.records['position'][-1][1][0] - global_state.records['position'][0][1][0]) * 1000
                     robot_y = (global_state.records['position'][-1][1][1] - global_state.records['position'][0][1][1]) * 1000
                     robot_a = (global_state.records['position'][-1][1][2]/3.1415926)*180
-                    print('ROBOT : ', robot_x, robot_y, robot_a)
+                    #print('ROBOT : ', robot_x, robot_y, robot_a)
 
                 if 'rangefinder' in global_state.records:
                     last_dist = global_state.records['rangefinder'][-1][1][0]
@@ -67,7 +70,7 @@ def update_robot():
                     py = robot_y + last_dist * np.sin(global_state.records['position'][-1][1][2])
 
                     red_points.append((int(px), int(py)))
-                    print('POINT : ', px, py)
+                    #print('POINT : ', px, py)
 
 
         time.sleep(0.01)
@@ -94,7 +97,7 @@ def display_window():
             display_frame = frame.copy()
 
         # Show the updated frame
-        cv2.imshow("Robot Canvas (Double Threads)", display_frame)
+        cv2.imshow("Window bleu canette de l'amour", display_frame)
 
         # Check for ESC key to stop
         if cv2.waitKey(30) == 27:  # ESC key
