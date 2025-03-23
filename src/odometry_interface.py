@@ -12,6 +12,7 @@ robot_a, robot_x, robot_y = 0, 0, 0
 red_points = []
 lock = threading.Lock()
 running = True  # Control variable to stop threads
+global_state = None
 
 def draw_rotated_rectangle(frame, position, size, angle):
     """
@@ -33,24 +34,40 @@ def update_canvas():
             frame = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
 
             # Draw the robot
-            draw_rotated_rectangle(frame, (robot_x, robot_y), (40, 20), robot_a)
+            draw_rotated_rectangle(frame, ((WIDTH//2) + robot_x, (HEIGHT//2) + robot_y), (40, 20), robot_a)
 
             # Draw all red points
             for pt in red_points:
-                cv2.circle(frame, pt, 3, (0, 0, 255), -1)  # Red dot
+                npt = ((WIDTH//2) + pt[0], (HEIGHT//2) + pt[1])
+                cv2.circle(frame, npt, 3, (0, 0, 255), -1)  # Red dot
 
         time.sleep(0.01)
 
 def update_robot():
     global robot_x, robot_y, robot_a, running
+    global global_state
+
+    time.sleep(3)
+
     while running:
         with lock:
             # Move the robot
-            robot_x += 5
-            robot_y += 5
-            robot_x %= 500
-            robot_y %= 500
-            robot_a += 1
+            if global_state is not None:
+                if len(global_state.records['position']) > 2:
+                    robot_x = (global_state.records['position'][-1][1][0] - global_state.records['position'][0][1][0]) * 10000
+                    robot_y = (global_state.records['position'][-1][1][1] - global_state.records['position'][0][1][1]) * 10000
+                    robot_a = (global_state.records['position'][-1][1][2]/3.1415926)*180
+                    print('ROBOT : ', robot_x, robot_y, robot_a)
+
+                if 'rangefinder' in global_state.records:
+                    last_dist = global_state.records['rangefinder'][-1][1][0]
+                    px = robot_x + last_dist * np.cos(global_state.records['position'][-1][1][2])
+                    py = robot_y + last_dist * np.sin(global_state.records['position'][-1][1][2])
+
+                    red_points.append((int(px), int(py)))
+                    #red_points.append((-120, 216))
+                    print('POINT : ', px, py)
+
 
         time.sleep(0.01)
 
@@ -62,7 +79,8 @@ def update_points():
     while running:
         if np.random.rand() < 0.1:
             with lock:
-                red_points.append((np.random.randint(0, WIDTH), np.random.randint(0, HEIGHT)))
+                #red_points.append((np.random.randint(0, WIDTH), np.random.randint(0, HEIGHT)))
+                pass
 
         time.sleep(0.05)
 
